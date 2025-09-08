@@ -1,6 +1,10 @@
 package link
 
-import "go-advanced/pkg/db"
+import (
+	"go-advanced/pkg/db"
+
+	"gorm.io/gorm/clause"
+)
 
 type LinkRepository struct {
 	Database *db.Db
@@ -29,4 +33,31 @@ func (repo *LinkRepository) GetByHash(hash string) (*Link, error) {
 	}
 
 	return &link, nil
+}
+
+func (repo *LinkRepository) GetById(id uint) (*Link, error) {
+	var link Link
+	res := repo.Database.DB.First(&link, id)
+
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	return &link, nil
+}
+
+func (repo *LinkRepository) Update(link *Link) (*Link, error) {
+	res := repo.Database.DB.Clauses(clause.Returning{}).Updates(link)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	return link, nil
+}
+
+func (repo *LinkRepository) Delete(id uint) error {
+	res := repo.Database.DB.Delete(&Link{}, id)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
 }
