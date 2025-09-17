@@ -30,7 +30,7 @@ func LoadConfig() *Config {
 			DSN: os.Getenv("DSN"),
 		},
 		Auth: AuthConfig{
-			Secret: os.Getenv("TOKEN"),
+			Secret: os.Getenv("JWT_SECRET"),
 		},
 	}
 }

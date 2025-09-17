@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"fmt"
 	"go-advanced/configs"
+	"go-advanced/pkg/jwt"
 	"go-advanced/pkg/request"
 	"go-advanced/pkg/response"
 	"net/http"
@@ -10,15 +10,18 @@ import (
 
 type AuthHandler struct {
 	*configs.Config
+	*AuthService
 }
 
 type AuthHandlerDeps struct {
 	*configs.Config
+	*AuthService
 }
 
 func NewAuthHandler(router *http.ServeMux, deps *AuthHandlerDeps) {
 	handler := &AuthHandler{
-		Config: deps.Config,
+		Config:      deps.Config,
+		AuthService: deps.AuthService,
 	}
 	router.HandleFunc("POST /auth/login", handler.Login())
 	router.HandleFunc("POST /auth/register", handler.Register())
@@ -32,9 +35,23 @@ func (h *AuthHandler) Login() http.HandlerFunc {
 			response.SendJSON(w, 400, err.Error())
 			return
 		}
-		fmt.Println(body)
+		email, err := h.AuthService.Login(body.Email, body.Password)
+
+		if err != nil {
+			response.SendJSON(w, 400, err.Error())
+			return
+		}
+
+		jwt := jwt.NewJWT(h.Auth.Secret)
+		token, err := jwt.Create(email)
+
+		if err != nil {
+			response.SendJSON(w, 500, err.Error())
+			return
+		}
+
 		resp := LoginResponse{
-			Token: "777",
+			Token: token,
 		}
 		response.SendJSON(w, http.StatusOK, resp)
 	}
@@ -43,12 +60,29 @@ func (h *AuthHandler) Login() http.HandlerFunc {
 func (h *AuthHandler) Register() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := request.HandleBody[RegisterRequest](&w, r)
- 		if err != nil {
+		if err != nil {
 			response.SendJSON(w, 400, err.Error())
 			return
 		}
-		fmt.Println(body)
+		email, err := h.AuthService.Register(body.Email, body.Password, body.Name)
 
-		response.SendJSON(w, http.StatusOK, "Register is succes")
+		if err != nil {
+			response.SendJSON(w, 400, err.Error())
+			return
+		}
+
+		jwt := jwt.NewJWT(h.Auth.Secret)
+		token, err := jwt.Create(email)
+
+		if err != nil {
+			response.SendJSON(w, 500, err.Error())
+			return
+		}
+
+		resp := LoginResponse{
+			Token: token,
+		}
+
+		response.SendJSON(w, http.StatusOK, resp)
 	}
 }

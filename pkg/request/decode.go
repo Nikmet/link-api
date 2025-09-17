@@ -2,7 +2,6 @@ package request
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 )
 
@@ -13,8 +12,6 @@ func Decode[T any](body io.ReadCloser) (T, error) {
 	if err != nil {
 		return payload, err
 	}
-
-	fmt.Println(payload)
 
 	return payload, nil
 }
