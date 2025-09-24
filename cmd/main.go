@@ -5,8 +5,10 @@ import (
 	"go-advanced/configs"
 	"go-advanced/internal/auth"
 	"go-advanced/internal/link"
+	"go-advanced/internal/stat"
 	"go-advanced/internal/user"
 	"go-advanced/pkg/db"
+	"go-advanced/pkg/event"
 	"go-advanced/pkg/middleware"
 	"net/http"
 )
@@ -15,13 +17,19 @@ func main() {
 	conf := configs.LoadConfig()
 	db := db.NewDB(conf)
 	router := http.NewServeMux()
+	eventBus := event.NewEventBus()
 
 	//* Reposittories
 	linkRepo := link.NewLinkRepossitory(db)
 	userRepo := user.NewUserRepository(db)
+	statRepo := stat.NewStatRepository(db)
 
 	//* Services
 	authService := auth.NewAuthService(userRepo)
+	statService := stat.NewStatService(&stat.StatServiceDeps{
+		EventBus:       eventBus,
+		StatRepository: statRepo,
+	})
 
 	//* Handlers
 	auth.NewAuthHandler(router, &auth.AuthHandlerDeps{
@@ -30,6 +38,12 @@ func main() {
 	})
 	link.NewLinkHandler(router, &link.LinkHandlerDeps{
 		LinkRepository: linkRepo,
+		Config:         conf,
+		EventBus:       eventBus,
+	})
+	stat.NewStatHandler(router, &stat.StatHanddlerDeps{
+		StatRepository: statRepo,
+		Config:         conf,
 	})
 
 	//Middlewares
@@ -39,6 +53,9 @@ func main() {
 		Addr:    ":8081",
 		Handler: stack(router),
 	}
+
+	// Click listener
+	go statService.AddClick()
 
 	fmt.Println("Sever is listening on port 8081")
 	err := server.ListenAndServe()

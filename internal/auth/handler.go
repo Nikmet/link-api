@@ -42,8 +42,10 @@ func (h *AuthHandler) Login() http.HandlerFunc {
 			return
 		}
 
-		jwt := jwt.NewJWT(h.Auth.Secret)
-		token, err := jwt.Create(email)
+		jwtStr := jwt.NewJWT(h.Auth.Secret)
+		token, err := jwtStr.Create(jwt.JWTData{
+			Email: email,
+		})
 
 		if err != nil {
 			response.SendJSON(w, 500, err.Error())
@@ -71,8 +73,10 @@ func (h *AuthHandler) Register() http.HandlerFunc {
 			return
 		}
 
-		jwt := jwt.NewJWT(h.Auth.Secret)
-		token, err := jwt.Create(email)
+		jwtStr := jwt.NewJWT(h.Auth.Secret)
+		token, err := jwtStr.Create(jwt.JWTData{
+			Email: email,
+		})
 
 		if err != nil {
 			response.SendJSON(w, 500, err.Error())
