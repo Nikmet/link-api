@@ -1,4 +1,5 @@
 .env
+/cmd/.env
 /.vscode
 /postgres-data
 /bin
